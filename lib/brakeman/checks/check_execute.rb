@@ -19,7 +19,10 @@ class Brakeman::CheckExecute < Brakeman::BaseCheck
     check_for_backticks tracker
 
     Brakeman.debug "Finding other system calls"
-    calls = tracker.find_call :targets => [:IO, :Open3, :Kernel, nil], :methods => [:exec, :popen, :popen3, :syscall, :system]
+    calls = tracker.find_call :targets => [:IO, :Open3, :Kernel, :'POSIX::Spawn', :Process, nil],
+      :methods => [:capture2, :capture2e, :capture3, :exec, :pipeline, :pipeline_r,
+        :pipeline_rw, :pipeline_start, :pipeline_w, :popen, :popen2, :popen2e, 
+        :popen3, :spawn, :syscall, :system]
 
     Brakeman.debug "Processing system calls"
     calls.each do |result|
@@ -43,7 +46,7 @@ class Brakeman::CheckExecute < Brakeman::BaseCheck
     if failure and not duplicate? result
       add_result result
 
-      if @string_interp
+      if failure.type == :interp #Not from user input
         confidence = CONFIDENCE[:med]
       else
         confidence = CONFIDENCE[:high]
@@ -51,6 +54,7 @@ class Brakeman::CheckExecute < Brakeman::BaseCheck
 
       warn :result => result,
         :warning_type => "Command Injection", 
+        :warning_code => :command_injection,
         :message => "Possible command injection",
         :code => call,
         :user_input => failure.match,
@@ -83,19 +87,12 @@ class Brakeman::CheckExecute < Brakeman::BaseCheck
       user_input = nil
     end
 
-    warning = { :warning_type => "Command Injection",
+    warn :result => result,
+      :warning_type => "Command Injection",
+      :warning_code => :command_injection,
       :message => "Possible command injection",
       :code => exp,
       :user_input => user_input,
-      :confidence => confidence }
-
-    if result[:location][0] == :template
-      warning[:template] = result[:location][1]
-    else
-      warning[:class] = result[:location][1]
-      warning[:method] = result[:location][2]
-    end
-
-    warn warning
+      :confidence => confidence
   end
 end

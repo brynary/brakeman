@@ -19,6 +19,16 @@ module Brakeman::ProcessorHelper
     exp
   end
 
+  #Process the arguments of a method call. Does not store results.
+  #
+  #This method is used because Sexp#args and Sexp#arglist create new objects.
+  def process_call_args exp
+    exp.each_arg do |a|
+      process a if sexp? a
+    end
+
+    exp
+  end
   #Sets the current module.
   def process_module exp
     module_name = class_name(exp.class_name).to_s
@@ -30,7 +40,11 @@ module Brakeman::ProcessorHelper
       @current_module = module_name
     end
 
-    process_all exp.body
+    if block_given?
+      yield
+    else
+      process_all exp.body
+    end
 
     @current_module = prev_module
 

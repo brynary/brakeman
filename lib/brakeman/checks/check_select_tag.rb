@@ -24,7 +24,7 @@ class Brakeman::CheckSelectTag < Brakeman::BaseCheck
     @message = "Upgrade to Rails #{suggested_version}, #{tracker.config[:rails_version]} select_tag is vulnerable (CVE-2012-3463)"
 
     calls = tracker.find_call(:target => nil, :method => :select_tag).select do |result|
-      result[:location][0] == :template
+      result[:location][:type] == :template
     end
 
     calls.each do |result|
@@ -38,7 +38,7 @@ class Brakeman::CheckSelectTag < Brakeman::BaseCheck
     add_result result
 
     #Only concerned if user input is supplied for :prompt option
-    last_arg = result[:call].arglist.last
+    last_arg = result[:call].last_arg
 
     if hash? last_arg
       prompt_option = hash_access last_arg, :prompt
@@ -48,6 +48,7 @@ class Brakeman::CheckSelectTag < Brakeman::BaseCheck
       elsif sexp? prompt_option and input = include_user_input?(prompt_option)
 
         warn :warning_type => "Cross Site Scripting",
+          :warning_code => :CVE_2012_3463,
           :result => result,
           :message => @message,
           :confidence => CONFIDENCE[:high],

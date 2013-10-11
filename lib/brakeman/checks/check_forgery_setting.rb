@@ -11,26 +11,30 @@ class Brakeman::CheckForgerySetting < Brakeman::BaseCheck
 
   def run_check
     app_controller = tracker.controllers[:ApplicationController]
-    if tracker.config[:rails] and
-      tracker.config[:rails][:action_controller] and
+    if tracker.config[:rails][:action_controller] and
       tracker.config[:rails][:action_controller][:allow_forgery_protection] == Sexp.new(:false)
 
       warn :controller => :ApplicationController,
         :warning_type => "Cross-Site Request Forgery",
+        :warning_code => :csrf_protection_disabled,
         :message => "Forgery protection is disabled", 
-        :confidence => CONFIDENCE[:high]
+        :confidence => CONFIDENCE[:high],
+        :file => app_controller[:file]
 
     elsif app_controller and not app_controller[:options][:protect_from_forgery]
 
       warn :controller => :ApplicationController, 
         :warning_type => "Cross-Site Request Forgery", 
+        :warning_code => :csrf_protection_missing,
         :message => "'protect_from_forgery' should be called in ApplicationController", 
-        :confidence => CONFIDENCE[:high]
+        :confidence => CONFIDENCE[:high],
+        :file => app_controller[:file]
 
     elsif version_between? "2.1.0", "2.3.10"
       
       warn :controller => :ApplicationController, 
         :warning_type => "Cross-Site Request Forgery",
+        :warning_code => :CVE_2011_0447,
         :message => "CSRF protection is flawed in unpatched versions of Rails #{tracker.config[:rails_version]} (CVE-2011-0447). Upgrade to 2.3.11 or apply patches as needed",
         :confidence => CONFIDENCE[:high],
         :file => gemfile_or_environment,
@@ -40,6 +44,7 @@ class Brakeman::CheckForgerySetting < Brakeman::BaseCheck
 
       warn :controller => :ApplicationController, 
         :warning_type => "Cross-Site Request Forgery",
+        :warning_code => :CVE_2011_0447,
         :message => "CSRF protection is flawed in unpatched versions of Rails #{tracker.config[:rails_version]} (CVE-2011-0447). Upgrade to 3.0.4 or apply patches as needed",
         :confidence => CONFIDENCE[:high],
         :file => gemfile_or_environment,

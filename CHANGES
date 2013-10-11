@@ -1,3 +1,156 @@
+# 2.1.2
+
+ * Do not attempt to load custom Haml filters
+ * Do not warn about `to_json` XSS in Rails 4
+ * Add --table-width option to set width of text reports (ssendev)
+ * Remove fuzzy matching on dangerous attr_accessible values
+
+# 2.1.1
+
+ * New warning code for dangerous attributes in attr_accessible
+ * Do not warn on attr_accessible using roles
+ * More accurate results for model attribute warnings
+ * Use exit code zero with `-z` if all warnings ignored
+ * Respect ignored warnings in rescans
+ * Ignore dynamic controller names in routes
+ * Fix infinite loop when run as rake task (Matthew Shanley)
+ * Respect ignored warnings in tabs format reports
+
+# 2.1.0
+
+ * Support non-native line endings in Gemfile.lock (Paul Deardorff)
+ * Support for ignoring warnings
+ * Check for dangerous model attributes defined in attr_accessible (Paul Deardorff)
+ * Update to ruby_parser 3.2.2
+ * Add brakeman-min gemspec
+ * Load gem dependencies on-demand 
+ * Output JSON diff to file if -o option is used 
+ * Add check for authenticate_or_request_with_http_basic
+ * Refactor of SQL injection check code (Bart ten Brinke)
+ * Fix detection of duplicate XSS warnings
+ * Refactor reports into separate classes 
+ * Allow use of Slim 2.x (Ian Zabel) 
+ * Return error exit code when application path is not found
+ * Add `--branch-limit` option, limit to 5 by default
+ * Add more methods to check for command injection
+ * Fix output format detection to be more strict again
+ * Allow empty Brakeman configuration file
+
+# 2.0.0
+  
+ * Add `--only-files` option to specify files/paths to scan (Ian Ehlert)
+ * Add Marshal/CSV deserialization check
+ * Combine deserialization checks into single check
+ * Avoid duplicate "Dangerous Send" and "Unsafe Reflection" warnings
+ * Avoid duplicate results for Symbol DoS check
+ * Medium confidence for mass assignment to attr_protected models
+ * Remove "timestamp" key from JSON reports
+ * Remove deprecated config file locations
+ * Relative paths are used by default in JSON reports
+ * `--absolute-paths` replaces `--relative-paths`
+ * Only treat classes with names containing `Controller` like controllers
+ * Better handling of classes nested inside controllers
+ * Better handling of controller classes nested in classes/modules
+ * Handle `->` lambdas with no arguments
+ * Handle explicit block argument destructuring
+ * Skip Rails config options that are real objects
+ * Detect Rails 3 JSON escape config option
+ * Much better tracking of warning file names
+ * Fix errors when using `--separate-models` (Noah Davis)
+ * Fix fingerprint generation to actually use the file path
+ * Fix text report console output in JRuby
+ * Fix false positives on `Model#id`
+ * Fix false positives on `params.to_json`
+ * Fix model path guesses to use "models/" instead of "controllers/"
+ * Clean up SQL CVE warning messages
+ * Use exceptions instead of abort in brakeman lib
+ * Update to Ruby2Ruby 2.0.5
+
+# 1.9.5
+
+ * Add check for unsafe symbol creation
+ * Do not warn on mass assignment with `slice`/`only`
+ * Do not warn on session secret if in `.gitignore`
+ * Fix scoping for blocks and block arguments
+ * Fix error when modifying blocks in templates
+ * Fix session secret check for Rails 4
+ * Fix crash on `before_filter` outside controller
+ * Fix `Sexp` hash cache invalidation
+ * Respect `quiet` option in configuration file
+ * Convert assignment to simple `if` expressions to `or`
+ * More fixes for assignments inside branches
+ * Pin to ruby2ruby version 2.0.3
+
+# 1.9.4
+ 
+ * Add check for CVE-2013-1854
+ * Add check for CVE-2013-1855
+ * Add check for CVE-2013-1856
+ * Add check for CVE-2013-1857
+ * Fix `--compare` to work with older versions
+ * Add "no-referrer' to HTML report links
+ * Don't warn when invoking `send` on user input
+ * Slightly faster cloning of Sexps
+ * Detect another way to add `strong_parameters`
+
+# 1.9.3
+ 
+ * Add render path to JSON report
+ * Add warning fingerprints
+ * Add check for unsafe reflection (Gabriel Quadros)
+ * Add check for skipping authentication methods with blacklist
+ * Add support for Slim templates
+ * Remove empty tables from reports (Owen Ben Davies)
+ * Handle `prepend/append_before_filter`
+ * Performance improvements when handling branches
+ * Fix processing of `production.rb`
+ * Fix version check for Ruby 2.0
+ * Expand HAML dependency to include 4.0
+ * Scroll errors into view when expanding in HTML report
+
+# 1.9.2
+
+ * Add check for CVE-2013-0269
+ * Add check for CVE-2013-0276
+ * Add check for CVE-2013-0277
+ * Add check for CVE-2013-0333
+ * Check for more send-like methods
+ * Check for more SQL injection locations
+ * Check for more dangerous YAML methods
+ * Support MultiJSON 1.2 for Rails 3.0 and 3.1
+
+# 1.9.1
+
+ * Update to RubyParser 3.1.1 (neersighted)
+ * Remove ActiveSupport dependency (Neil Matatall)
+ * Do not warn on arrays passed to `link_to` (Neil Matatall)
+ * Warn on secret tokens
+ * Warn on more mass assignment methods
+ * Add check for CVE-2012-5664
+ * Add check for CVE-2013-0155
+ * Add check for CVE-2013-0156
+ * Add check for unsafe `YAML.load`
+
+# 1.9.0
+
+ * Update to RubyParser 3
+ * Ignore route information by default
+ * Support `strong_parameters`
+ * Support newer `validates :format` call
+ * Add scan time to reports
+ * Add Brakeman version to reports
+ * Fix `CheckExecute` to warn on all string interpolation
+ * Fix false positive on `to_sql` calls
+ * Don't mangle whitespace in JSON code formatting
+ * Add AppTree as facade for filesystem (brynary)
+ * Add link for translate vulnerability warning (grosser)
+ * Rename LICENSE to MIT-LICENSE, remove from README (grosser)
+ * Add Rakefile to run tests (grosser)
+ * Better default config file locations (grosser)
+ * Reduce Sexp creation
+ * Handle empty model files
+ * Remove "find by regex" feature from `CallIndex`
+
 # 1.8.3
 
  * Use `multi_json` gem for better harmony

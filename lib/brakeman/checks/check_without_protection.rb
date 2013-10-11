@@ -33,7 +33,7 @@ class Brakeman::CheckWithoutProtection < Brakeman::BaseCheck
   #All results should be Model.new(...) or Model.attributes=() calls
   def process_result res
     call = res[:call]
-    last_arg = call.args.last
+    last_arg = call.last_arg
 
     if hash? last_arg and not call.original_line and not duplicate? res
 
@@ -51,6 +51,7 @@ class Brakeman::CheckWithoutProtection < Brakeman::BaseCheck
 
           warn :result => res, 
             :warning_type => "Mass Assignment", 
+            :warning_code => :mass_assign_without_protection,
             :message => "Unprotected mass assignment",
             :code => call, 
             :user_input => user_input,

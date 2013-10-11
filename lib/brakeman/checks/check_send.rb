@@ -8,7 +8,7 @@ class Brakeman::CheckSend < Brakeman::BaseCheck
 
   def run_check
     Brakeman.debug("Finding instances of #send")
-    calls = tracker.find_call :method => :send
+    calls = tracker.find_call :methods => [:send, :try, :__send__, :public_send]
 
     calls.each do |call|
       process_result call
@@ -16,25 +16,20 @@ class Brakeman::CheckSend < Brakeman::BaseCheck
   end
 
   def process_result result
-    args = process_all! result[:call].args
+    return if duplicate? result or result[:call].original_line
+    add_result result
+
+    process_call_args result[:call]
     target = process result[:call].target
 
-    if input = has_immediate_user_input?(args.first)
+    if input = has_immediate_user_input?(result[:call].first_arg)
       warn :result => result,
         :warning_type => "Dangerous Send",
+        :warning_code => :dangerous_send,
         :message => "User controlled method execution",
         :code => result[:call],
         :user_input => input.match,
         :confidence => CONFIDENCE[:high]
-    end
-
-    if input = has_immediate_user_input?(target)
-      warn :result => result,
-        :warning_type => "Dangerous Send",
-        :message => "User defined target of method invocation",
-        :code => result[:call],
-        :user_input => input.match,
-        :confidence => CONFIDENCE[:med]
     end
   end
 end

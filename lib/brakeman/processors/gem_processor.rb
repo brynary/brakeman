@@ -14,6 +14,7 @@ class Brakeman::GemProcessor < Brakeman::BaseProcessor
 
     if gem_lock
       get_rails_version gem_lock
+      get_json_version gem_lock
     elsif @tracker.config[:gems][:rails] =~ /(\d+.\d+.\d+)/
       @tracker.config[:rails_version] = $1
     end
@@ -27,21 +28,32 @@ class Brakeman::GemProcessor < Brakeman::BaseProcessor
 
   def process_call exp
     if exp.target == nil and exp.method == :gem
-      args = exp.args
+      gem_name = exp.first_arg
+      gem_version = exp.second_arg
 
-      if string? args.second
-        @tracker.config[:gems][args.first.value.to_sym] = args.second.value
+      if string? gem_version
+        @tracker.config[:gems][gem_name.value.to_sym] = gem_version.value
       else
-        @tracker.config[:gems][args.first.value.to_sym] = ">=0.0.0"
+        @tracker.config[:gems][gem_name.value.to_sym] = ">=0.0.0"
       end
     end
 
     exp
   end
+  
+  # Supports .rc2 but not ~>, >=, or <=
+  def get_version name, gem_lock
+    if gem_lock =~ /\s#{name} \((\w(\.\w+)*)\)(?:\n|\r\n)/ 
+      $1
+    end 
+  end
 
   def get_rails_version gem_lock
-    if gem_lock =~ /\srails \((\d+.\d+.\d+.*)\)$/
-      @tracker.config[:rails_version] = $1
-    end
+    @tracker.config[:rails_version] = get_version("rails", gem_lock)
+  end
+
+  def get_json_version gem_lock
+    @tracker.config[:gems][:json] = get_version("json", gem_lock)
+    @tracker.config[:gems][:json_pure] = get_version("json_pure", gem_lock)
   end
 end

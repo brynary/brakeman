@@ -84,7 +84,7 @@ class Brakeman::FindCall < Brakeman::BaseProcessor
     target = get_target exp.target
     method = exp.method
 
-    process_all exp.args
+    process_call_args exp
 
     if match(@find_targets, target) and match(@find_methods, method)
 
@@ -146,6 +146,8 @@ class Brakeman::FindCall < Brakeman::BaseProcessor
       else
         false
       end
+    when Sexp
+      search_terms == item
     when Enumerable
       if search_terms.empty?
         item == nil
