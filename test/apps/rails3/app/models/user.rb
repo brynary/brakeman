@@ -35,4 +35,10 @@ class User < ActiveRecord::Base
   def safe_sql
     User.where "something = ?", "#{params[:awesome]}"
   end
+
+  def sanitized_profile
+    sanitize self.profile.to_s
+  end
+
+  serialize :something
 end

@@ -1,5 +1,6 @@
 require 'brakeman/processors/alias_processor'
 require 'brakeman/processors/lib/render_helper'
+require 'brakeman/processors/lib/find_return_value'
 
 #Processes aliasing in controllers, but includes following
 #renders in routes and putting variables into templates
@@ -10,10 +11,9 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
   #other methods will be skipped.
   #This is for rescanning just a single action.
   def initialize app_tree, tracker, only_method = nil
-    super()
+    super tracker
     @app_tree = app_tree
     @only_method = only_method
-    @tracker = tracker
     @rendered = false
     @current_class = @current_module = @current_method = nil
     @method_cache = {} #Cache method lookups
@@ -48,7 +48,7 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
         #Need to process the method like it was in a controller in order
         #to get the renders set
         processor = Brakeman::ControllerProcessor.new(@app_tree, @tracker)
-        method = mixin[:public][name]
+        method = mixin[:public][name].deep_clone
 
         if node_type? method, :methdef
           method = processor.process_defn method
@@ -63,22 +63,17 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
     end
   end
 
-  #Processes a class which is probably a controller.
-  #(This method should be retired - only classes should ever be processed
-  # and @current_module will never be set, leading to inaccurate class names)
+  #Skip it, must be an inner class
   def process_class exp
-    @current_class = class_name(exp.class_name)
-    if @current_module
-      @current_class = ("#@current_module::#@current_class").to_sym
-    end
-
-    process_default exp
+    exp
   end
 
   #Processes a method definition, which may include
   #processing any rendered templates.
   def process_methdef exp
     meth_name = exp.method_name
+
+    Brakeman.debug "Processing #{@current_class}##{meth_name}"
 
     #Skip if instructed to only process a specific method
     #(but don't skip if this method was called from elsewhere)
@@ -89,9 +84,7 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
     @current_method = meth_name
     @rendered = false if is_route
 
-    env.scope do
-      set_env_defaults
-
+    meth_env do
       if is_route
         before_filter_list(@current_method, @current_class).each do |f|
           process_before_filter f
@@ -112,16 +105,24 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
   #Look for calls to head()
   def process_call exp
     exp = super
+    return exp unless call? exp
 
-    if call? exp and exp.method == :head
+    method = exp.method
+
+    if method == :head
       @rendered = true
+    elsif @tracker.options[:interprocedural] and
+      @current_method and (exp.target.nil? or exp.target.node_type == :self)
+
+      exp = get_call_value(exp)
     end
+
     exp
   end
 
   #Check for +respond_to+
   def process_call_with_block exp
-    process_default exp
+    super
 
     if call? exp.block_call and exp.block_call.method == :respond_to
       @rendered = true
@@ -149,7 +150,7 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
       end
     else
       processor = Brakeman::AliasProcessor.new @tracker
-      processor.process_safely(method.body_list)
+      processor.process_safely(method.body_list, only_ivars(:include_request_vars))
 
       ivars = processor.only_ivars(:include_request_vars).all
 
@@ -201,9 +202,12 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
 
   #Returns true if the given method name is also a route
   def route? method
-    return true if @tracker.routes[:allow_all_actions] or @tracker.options[:assume_all_routes]
-    routes = @tracker.routes[@current_class]
-    routes and (routes == :allow_all_actions or routes.include? method)
+    if @tracker.routes[:allow_all_actions] or @tracker.options[:assume_all_routes]
+      true
+    else
+      routes = @tracker.routes[@current_class]
+      routes and (routes == :allow_all_actions or routes.include? method)
+    end
   end
 
   #Get list of filters, including those that are inherited
@@ -214,7 +218,8 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
     while controller
       filters = get_before_filters(method, controller) + filters
 
-      controller = @tracker.controllers[controller[:parent]]
+      controller = @tracker.controllers[controller[:parent]] ||
+                   @tracker.libs[controller[:parent]]
     end
 
     filters

@@ -1,16 +1,19 @@
 ![Brakeman Logo](http://brakemanscanner.org/images/logo_medium.png)
 
-![Travis CI Status](https://secure.travis-ci.org/presidentbeef/brakeman.png) [![Code Climate](https://codeclimate.com/badge.png)](https://codeclimate.com/github/presidentbeef/brakeman)
+[![Travis CI
+Status](https://secure.travis-ci.org/presidentbeef/brakeman.png)](https://travis-ci.org/presidentbeef/brakeman)
+[![Code
+Climate](https://codeclimate.com/github/presidentbeef/brakeman.png)](https://codeclimate.com/github/presidentbeef/brakeman)
 
 # Brakeman
 
 Brakeman is a static analysis tool which checks Ruby on Rails applications for security vulnerabilities.
 
-It targets Rails versions 2.x and 3.x.
- 
+It works with Rails 2.x, 3.x, and 4.x.
+
 There is also a [plugin available](http://brakemanscanner.org/docs/jenkins/) for Jenkins/Hudson.
 
-For even more continuous testing, try the [Guard plugin](https://github.com/oreoshake/guard-brakeman).
+For even more continuous testing, try the [Guard plugin](https://github.com/guard/guard-brakeman).
 
 # Homepage/News
 
@@ -25,6 +28,12 @@ Mailing list: brakeman@librelist.com
 Using RubyGems:
 
     gem install brakeman
+
+Using Bundler, add to development group in Gemfile and set to not be required automatically:
+
+    group :development do
+      gem 'brakeman', :require => false
+    end
 
 From source:
 
@@ -115,6 +124,11 @@ To compare results of a scan with a previous scan, use the JSON output option an
 
 This will output JSON with two lists: one of fixed warnings and one of new warnings.
 
+Brakeman will ignore warnings if configured to do so. By default, it looks for a configuration file in `config/brakeman.ignore`.
+To create and manage this file, use:
+
+    brakeman -I
+
 # Warning information
 
 See WARNING\_TYPES for more information on the warnings reported by this tool.
@@ -149,4 +163,16 @@ The default config locations are `./config/brakeman.yml`, `~/.brakeman/config.ym
 
 The `-c` option can be used to specify a configuration file to use.
 
-# License see MIT-LICENSE
+# Who is Using Brakeman?
+
+* [Code Climate](https://codeclimate.com/)
+* [GitHub](https://github.com/)
+* [Groupon](http://www.groupon.com/)
+* [New Relic](http://newrelic.com)
+* [Twitter](https://twitter.com/)
+
+[..and more!](http://brakeman.org/brakeman_users)
+
+# License
+
+see MIT-LICENSE

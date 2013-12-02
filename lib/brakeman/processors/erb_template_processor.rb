@@ -19,7 +19,7 @@ class Brakeman::ErbTemplateProcessor < Brakeman::TemplateProcessor
         exp.arglist = process(exp.arglist)
         @inside_concat = false
 
-        if exp.args.length > 2
+        if exp.second_arg
           raise Exception.new("Did not expect more than a single argument to _erbout.concat")
         end
 
@@ -48,7 +48,7 @@ class Brakeman::ErbTemplateProcessor < Brakeman::TemplateProcessor
     else
       #TODO: Is it really necessary to create a new Sexp here?
       call = make_call target, method, process_all!(exp.args)
-      call.original_line(exp.original_line)
+      call.original_line = exp.original_line
       call.line(exp.line)
       call
     end
@@ -56,6 +56,7 @@ class Brakeman::ErbTemplateProcessor < Brakeman::TemplateProcessor
 
   #Process block, removing irrelevant expressions
   def process_block exp
+    exp = exp.dup
     exp.shift
     if @inside_concat
       @inside_concat = false

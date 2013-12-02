@@ -13,7 +13,7 @@ class Brakeman::CheckRedirect < Brakeman::BaseCheck
   def run_check
     Brakeman.debug "Finding calls to redirect_to()"
 
-    @model_find_calls = Set[:all, :find, :find_by_sql, :first, :last, :new]
+    @model_find_calls = Set[:all, :create, :create!, :find, :find_by_sql, :first, :last, :new]
 
     if tracker.options[:rails3]
       @model_find_calls.merge [:from, :group, :having, :joins, :lock, :order, :reorder, :select, :where]
@@ -42,6 +42,7 @@ class Brakeman::CheckRedirect < Brakeman::BaseCheck
 
       warn :result => result,
         :warning_type => "Redirect",
+        :warning_code => :open_redirect,
         :message => "Possible unprotected redirect",
         :code => call,
         :user_input => res.match,
@@ -127,7 +128,7 @@ class Brakeman::CheckRedirect < Brakeman::BaseCheck
     if node_type? exp, :or
       model_instance? exp.lhs or model_instance? exp.rhs
     elsif call? exp
-      if model_name? exp.target and
+      if model_name? exp.target or friendly_model? exp.target and
         (@model_find_calls.include? exp.method or exp.method.to_s.match(/^find_by_/))
         true
       else
@@ -136,6 +137,12 @@ class Brakeman::CheckRedirect < Brakeman::BaseCheck
     end
   end
 
+  #Returns true if exp is (probably) a friendly model instance
+  #using the FriendlyId gem
+  def friendly_model? exp
+    call? exp and model_name? exp.target and exp.method == :friendly
+  end
+  
   #Returns true if exp is (probably) a decorated model instance
   #using the Draper gem
   def decorated_model? exp

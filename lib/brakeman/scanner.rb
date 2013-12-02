@@ -1,18 +1,11 @@
 require 'rubygems'
+
 begin
   require 'ruby_parser'
   require 'ruby_parser/bm_sexp.rb'
   require 'ruby_parser/bm_sexp_processor.rb'
-
-  require 'haml'
-  require 'sass'
-  require 'erb'
-  require 'erubis'
   require 'brakeman/processor'
   require 'brakeman/app_tree'
-  require 'brakeman/parsers/rails2_erubis'
-  require 'brakeman/parsers/rails2_xss_plugin_erubis'
-  require 'brakeman/parsers/rails3_erubis'
 rescue LoadError => e
   $stderr.puts e.message
   $stderr.puts "Please install the appropriate dependency."
@@ -23,8 +16,8 @@ end
 class Brakeman::Scanner
   attr_reader :options
 
-  RUBY_1_9 = !!(RUBY_VERSION =~ /^1\.9/)
-  KNOWN_TEMPLATE_EXTENSIONS = /.*\.(erb|haml|rhtml)$/
+  RUBY_1_9 = !!(RUBY_VERSION >= "1.9.0")
+  KNOWN_TEMPLATE_EXTENSIONS = /.*\.(erb|haml|rhtml|slim)$/
 
   #Pass in path to the root of the Rails application
   def initialize options, processor = nil
@@ -32,12 +25,15 @@ class Brakeman::Scanner
     @app_tree = Brakeman::AppTree.from_options(options)
 
     if !@app_tree.root || !@app_tree.exists?("app")
-      abort("Please supply the path to a Rails application.")
+      raise Brakeman::NoApplication, "Please supply the path to a Rails application."
     end
 
     if @app_tree.exists?("script/rails")
       options[:rails3] = true
       Brakeman.notify "[Notice] Detected Rails 3 application"
+    elsif not @app_tree.exists?("script")
+      options[:rails3] = true # Probably need to do some refactoring
+      Brakeman.notify "[Notice] Detected Rails 4 application"
     end
 
     @ruby_parser = ::RubyParser
@@ -51,10 +47,10 @@ class Brakeman::Scanner
 
   #Process everything in the Rails application
   def process
-    Brakeman.notify "Processing configuration..."
-    process_config
     Brakeman.notify "Processing gems..."
     process_gems
+    Brakeman.notify "Processing configuration..."
+    process_config
     Brakeman.notify "Processing initializers..."
     process_initializers
     Brakeman.notify "Processing libs..."
@@ -100,8 +96,8 @@ class Brakeman::Scanner
     end
 
   rescue Exception => e
-    Brakeman.notify "[Notice] Error while processing config/#{file}"
-    tracker.error e.exception(e.message + "\nwhile processing Gemfile"), e.backtrace
+    Brakeman.notify "[Notice] Error while processing #{path}"
+    tracker.error e.exception(e.message + "\nwhile processing #{path}"), e.backtrace
   end
 
   private :process_config_file
@@ -268,22 +264,36 @@ class Brakeman::Scanner
         if tracker.config[:escape_html]
           type = :erubis
           if options[:rails3]
+            require 'brakeman/parsers/rails3_erubis'
             src = Brakeman::Rails3Erubis.new(text).src
           else
+            require 'brakeman/parsers/rails2_xss_plugin_erubis'
             src = Brakeman::Rails2XSSPluginErubis.new(text).src
           end
         elsif tracker.config[:erubis]
+          require 'brakeman/parsers/rails2_erubis'
           type = :erubis
           src = Brakeman::ScannerErubis.new(text).src
         else
+          require 'erb'
           src = ERB.new(text, nil, "-").src
           src.sub!(/^#.*\n/, '') if RUBY_1_9
         end
 
         parsed = parse_ruby src
       elsif type == :haml
+        Brakeman.load_brakeman_dependency 'haml'
+        Brakeman.load_brakeman_dependency 'sass'
+
         src = Haml::Engine.new(text,
                                :escape_html => !!tracker.config[:escape_html]).precompiled
+        parsed = parse_ruby src
+      elsif type == :slim
+        Brakeman.load_brakeman_dependency 'slim'
+
+        src = Slim::Template.new(:disable_capture => true,
+                                 :generator => Temple::Generators::RailsOutputBuffer) { text }.precompiled_template
+
         parsed = parse_ruby src
       else
         tracker.error "Unkown template type in #{path}"
@@ -347,3 +357,6 @@ class Brakeman::Scanner
     @ruby_parser.new.parse input
   end
 end
+
+# This is to allow operation without loading the Haml library
+module Haml; class Error < StandardError; end; end

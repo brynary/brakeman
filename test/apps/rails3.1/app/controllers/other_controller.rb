@@ -59,4 +59,21 @@ class OtherController < ApplicationController
 
     redirect_to user
   end
+
+  def test_sanitized_medium
+    sanitize something
+    @css = sanitize_css(some_css)
+  end
+
+  def test_deserialization
+    CSV.load params[:csv]
+
+    Marshal.load params[:object]
+
+    Marshal.restore User.find(1).cool_stored_thing
+  end
+
+  def test_model_in_haml
+    @user = User.new
+  end
 end

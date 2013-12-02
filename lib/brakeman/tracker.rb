@@ -10,7 +10,7 @@ class Brakeman::Tracker
   attr_accessor :controllers, :templates, :models, :errors,
     :checks, :initializers, :config, :routes, :processor, :libs,
     :template_cache, :options, :filter_cache, :start_time, :end_time,
-    :duration
+    :duration, :ignored_filter
 
   #Place holder when there should be a model, but it is not
   #clear what model it will be.
@@ -25,7 +25,7 @@ class Brakeman::Tracker
     @processor = processor
     @options = options
 
-    @config = {}
+    @config = { :rails => {} }
     @templates = {}
     @controllers = {}
     #Initialize models with the unknown model so
@@ -86,7 +86,7 @@ class Brakeman::Tracker
               method_name = "#{definition[1]}.#{method_name}"
             end
 
-            yield definition, set_name, method_name
+            yield definition, set_name, method_name, info[:file]
 
           end
         end
@@ -152,15 +152,29 @@ class Brakeman::Tracker
     Brakeman::Report.new(@app_tree, self)
   end
 
+  def warnings
+    self.checks.all_warnings
+  end
+
+  def filtered_warnings
+    if self.ignored_filter
+      self.warnings.reject do |w|
+        self.ignored_filter.ignored? w
+      end
+    else
+      self.warnings
+    end
+  end
+
   def index_call_sites
     finder = Brakeman::FindAllCalls.new self
 
-    self.each_method do |definition, set_name, method_name|
-      finder.process_source definition, set_name, method_name
+    self.each_method do |definition, set_name, method_name, file|
+      finder.process_source definition, :class => set_name, :method => method_name, :file => file
     end
 
     self.each_template do |name, template|
-      finder.process_source template[:src], nil, nil, template
+      finder.process_source template[:src], :template => template, :file => template[:file]
     end
 
     @call_index = Brakeman::CallIndex.new finder.calls
@@ -208,7 +222,7 @@ class Brakeman::Tracker
               method_name = "#{definition[1]}.#{method_name}"
             end
 
-            finder.process_source definition, set_name, method_name
+            finder.process_source definition, :class => set_name, :method => method_name, :file => info[:file]
 
           end
         end
@@ -217,7 +231,7 @@ class Brakeman::Tracker
 
     if locations.include? :templates
       self.each_template do |name, template|
-        finder.process_source template[:src], nil, nil, template
+        finder.process_source template[:src], :template => template, :file => template[:file]
       end
     end
 

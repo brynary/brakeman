@@ -81,10 +81,10 @@ class HomeController < ApplicationController
   def test_send_first_param
     method = params["method"]
     @result = User.send(method.to_sym)
+    do_something_with @result # don't warn on this line
   end
 
-  # not that safe
-  def test_send_target
+  def test_send_target # not that safe
     table = params["table"]
     model = table.classify.constantize
     @result = model.send(:method)
@@ -149,6 +149,15 @@ class HomeController < ApplicationController
 
   def test_content_tag
     @user = User.find(current_user)
+  end
+
+  def test_more_send_methods
+    User.try(params[:meth])
+    self.__send__(params[:meth])
+    Account.public_send(params[:meth])
+
+    table = params["table"]
+    table.classify.constantize.try(:meth)
   end
 
   private

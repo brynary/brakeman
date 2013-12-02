@@ -13,7 +13,7 @@ module Brakeman::RenderHelper
     when :default
       begin
         process_template template_name, exp[3]
-      rescue ArgumentError => e
+      rescue ArgumentError
         Brakeman.debug "Problem processing render: #{exp}"
       end
     when :partial, :layout
@@ -120,7 +120,7 @@ module Brakeman::RenderHelper
         unless value.original_line
           #TODO: This has been broken for a while now and no one noticed
           #so maybe we can skip it
-          value.original_line(value.line)
+          value.original_line = value.line
         end
       end
 

@@ -4,6 +4,7 @@ $LOAD_PATH.unshift "#{TEST_PATH}/../lib"
 
 begin
   require 'simplecov'
+
   SimpleCov.start do
     add_filter 'lib/ruby_parser/ruby18_parser.rb'
     add_filter 'lib/ruby_parser/ruby19_parser.rb'
@@ -29,7 +30,7 @@ module BrakemanTester
 
       announce "Processing #{name} application..."
 
-      Brakeman.run(opts).report.to_test
+      Brakeman.run(opts).report.to_hash
     end
 
     #Make an announcement
@@ -57,7 +58,7 @@ module BrakemanTester::FindWarning
   def find opts = {}, &block
     t = opts[:type]
     if t.nil? or t == :warning
-      warnings = report[:warnings]
+      warnings = report[:generic_warnings]
     else
       warnings = report[(t.to_s << "_warnings").to_sym]
     end
@@ -68,14 +69,9 @@ module BrakemanTester::FindWarning
       warnings.select block
     else
       warnings.select do |w|
-        flag = true
-        opts.each do |k,v|
-          unless v === w.send(k)
-            flag = false
-            break
-          end
+        opts.all? do |k,v|
+          v === w.send(k)
         end
-        flag
       end
     end
 
@@ -111,14 +107,15 @@ module BrakemanTester::RescanTestHelper
   #given in `changed`.
   #
   #Provide an array of changed files for rescanning.
-  def before_rescan_of changed, app = "rails3.2"
+  def before_rescan_of changed, app = "rails3.2", options = {}
     changed = [changed] unless changed.is_a? Array
 
     Dir.mktmpdir do |dir|
       @dir = dir
+      options = {:app_path => dir, :debug => false}.merge(options)
 
       FileUtils.cp_r "#{TEST_PATH}/apps/#{app}/.", dir
-      @original = Brakeman.run :app_path => dir, :debug => false
+      @original = Brakeman.run options
 
       yield dir if block_given?
 
@@ -153,7 +150,7 @@ module BrakemanTester::RescanTestHelper
 
   #Check how many existing warnings were reported
   def assert_existing
-    expected = (@rescan.old_results.all_warnings.length - fixed.length)
+    expected = (@rescan.old_results.length - fixed.length)
 
     assert_equal expected, existing.length, "Expected #{expected} existing warnings, but found #{existing.length}"
   end
@@ -195,7 +192,7 @@ module BrakemanTester::RescanTestHelper
     output = yield parsed
 
     File.open path, "w" do |f|
-      f.puts Ruby2Ruby.new.process output
+      f.puts Brakeman::OutputProcessor.new.process output
     end
   end
 

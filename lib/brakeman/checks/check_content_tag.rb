@@ -32,6 +32,7 @@ class Brakeman::CheckContentTag < Brakeman::CheckCrossSiteScripting
 
     @models = tracker.models.keys
     @inspect_arguments = tracker.options[:check_arguments]
+    @mark = nil
 
     Brakeman.debug "Checking for XSS in content_tag"
     methods.each do |call|
@@ -44,7 +45,7 @@ class Brakeman::CheckContentTag < Brakeman::CheckCrossSiteScripting
 
     call = result[:call] = result[:call].dup
 
-    args = call.arglist 
+    args = call.arglist
 
     tag_name = args[1]
     content = args[2]
@@ -93,38 +94,31 @@ class Brakeman::CheckContentTag < Brakeman::CheckCrossSiteScripting
     end
 
     if input = has_immediate_user_input?(arg)
-      case input.type
-      when :params
-        message = "Unescaped parameter value in content_tag"
-      when :cookies
-        message = "Unescaped cookie value in content_tag"
-      else
-        message = "Unescaped user input value in content_tag"
-      end
+      message = "Unescaped #{friendly_type_of input} in content_tag"
 
       add_result result
 
       warn :result => result,
-        :warning_type => "Cross Site Scripting", 
+        :warning_type => "Cross Site Scripting",
+        :warning_code => :xss_content_tag,
         :message => message,
         :user_input => input.match,
         :confidence => CONFIDENCE[:high],
         :link_path => "content_tag"
 
     elsif not tracker.options[:ignore_model_output] and match = has_immediate_model?(arg)
-      method = match[2]
-
-      unless IGNORE_MODEL_METHODS.include? method
+      unless IGNORE_MODEL_METHODS.include? match.method
         add_result result
 
-        if MODEL_METHODS.include? method or method.to_s =~ /^find_by/
+        if likely_model_attribute? match
           confidence = CONFIDENCE[:high]
         else
           confidence = CONFIDENCE[:med]
         end
 
         warn :result => result,
-          :warning_type => "Cross Site Scripting", 
+          :warning_type => "Cross Site Scripting",
+          :warning_code => :xss_content_tag,
           :message => "Unescaped model attribute in content_tag",
           :user_input => match,
           :confidence => confidence,
@@ -132,33 +126,20 @@ class Brakeman::CheckContentTag < Brakeman::CheckCrossSiteScripting
       end
 
     elsif @matched
-      message = "Unescaped "
+      return if @matched.type == :model and tracker.options[:ignore_model_output]
 
-      case @matched.type
-      when :model
-        return if tracker.options[:ignore_model_output]
-        message << "model attribute"
-      when :params
-        message << "parameter"
-      when :cookies
-        message << "cookie"
-      when :session
-        message << "session"
-      else
-        message << "user input"
-      end
-
-      message << " value in content_tag"
+      message = "Unescaped #{friendly_type_of @matched} in content_tag"
 
       add_result result
 
-      warn :result => result, 
-        :warning_type => "Cross Site Scripting", 
+      warn :result => result,
+        :warning_type => "Cross Site Scripting",
+        :warning_code => :xss_content_tag,
         :message => message,
         :user_input => @matched.match,
         :confidence => CONFIDENCE[:med],
         :link_path => "content_tag"
-      end
+    end
   end
 
   def process_call exp

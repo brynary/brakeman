@@ -42,4 +42,27 @@ class OtherController < ApplicationController
     @x = params[:x].to_i
     @id = cookies[:id].to_i
   end
+
+  def test_to_sym
+    :"#{hello!}"
+
+    x = params[:x].to_sym
+
+    #Checking that the code below does not warn about to_sym again
+    call_something_with x
+
+    x.cool_thing?
+  end
+
+  def test_xss_duplicates1
+    @thing = params[:thing]
+
+    render :xss_dupes, :layout => 'thing'
+  end
+
+  def test_xss_duplicates2
+    @thing = blah(params[:other_thing])
+
+    render :xss_dupes, :layout => 'thing'
+  end
 end

@@ -83,4 +83,13 @@ class UsersController < ApplicationController
       format.json { head :no_content }
     end
   end
+
+  def slimming
+    @user = User.find(params[:id])
+    @query = params[:query]
+  end
+
+  def show_detailed_exceptions?
+    false # no warning
+  end
 end
