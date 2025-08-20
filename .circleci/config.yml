@@ -26,8 +26,9 @@ jobs:
             bundle exec rake RUBYOPT='--enable-frozen-string-literal --debug-frozen-string-literal'
       - store_test_results:
           path: test-results
-      - qlty/coverage_publish:
-          files: coverage/coverage.json
+      - persist_to_workspace:
+          paths:
+            - coverage/coverage.json
   test-3-2:
     <<: *default
     docker:
@@ -36,6 +37,14 @@ jobs:
     <<: *default
     docker:
       - image: cimg/ruby:3.4
+  upload-coverage:
+    <<: *default
+    working_directory: ~/repo
+    steps:
+      - attach_workspace:
+          at: ~/repo/tmp
+      - qlty/coverage_publish:
+          files: coverage/coverage.json
 workflows:
   version: 2
   tests:
@@ -44,3 +53,6 @@ workflows:
       - test-3-1
       - test-3-2
       - test-3-4
+      - upload-coverage:
+          requires:
+            - test-3-1
