@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  qlty: qltysh/qlty-orb@0.1.0
+  qlty: qltysh/qlty-orb@0.0
 jobs:
   default: &default
     docker:
@@ -24,11 +24,13 @@ jobs:
       - run:
           command: |
             bundle exec rake RUBYOPT='--enable-frozen-string-literal --debug-frozen-string-literal'
+            mv coverage/coverage.json tmp/coverage.json
       - store_test_results:
           path: test-results
       - persist_to_workspace:
+          root: tmp
           paths:
-            - coverage/coverage.json
+            - coverage.json
   test-3-2:
     <<: *default
     docker:
@@ -43,8 +45,9 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/repo/tmp
-      - qlty/coverage_publish:
-          files: coverage/coverage.json
+      - run:
+          name: Upload coverage results to Qlty
+          command: ls -l 
 workflows:
   version: 2
   tests:
