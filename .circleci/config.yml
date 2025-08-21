@@ -53,6 +53,7 @@ jobs:
           at: ~/repo/tmp
       - qlty/coverage_publish:
           files: tmp/coverage.json
+          strip_prefix: /home/circleci/project
 workflows:
   version: 2
   tests:
