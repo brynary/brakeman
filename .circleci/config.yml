@@ -22,7 +22,9 @@ jobs:
           at: ~/repo/tmp
       - run: bundle check || bundle install
       - run:
+          name: Run tests and generate coverage
           command: |
+            # This triggers SimpleCov to generate a coverage.json file
             export CC_TEST_REPORTER_ID=CC_TEST_REPORTER_ID
             bundle exec rake RUBYOPT='--enable-frozen-string-literal --debug-frozen-string-literal'
             find .
@@ -48,9 +50,8 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/repo/tmp
-      - run:
-          name: Upload coverage results to Qlty
-          command: ls -l 
+      - qlty/coverage_publish:
+          files: tmp/coverage.json
 workflows:
   version: 2
   tests:
