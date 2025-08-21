@@ -23,6 +23,7 @@ jobs:
       - run: bundle check || bundle install
       - run:
           command: |
+            export CC_TEST_REPORTER_ID=CC_TEST_REPORTER_ID
             bundle exec rake RUBYOPT='--enable-frozen-string-literal --debug-frozen-string-literal'
             find .
       - store_test_results:
