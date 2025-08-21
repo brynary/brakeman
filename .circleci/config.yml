@@ -24,7 +24,7 @@ jobs:
       - run:
           command: |
             bundle exec rake RUBYOPT='--enable-frozen-string-literal --debug-frozen-string-literal'
-            mv coverage/coverage.json tmp/coverage.json
+            find .
       - store_test_results:
           path: test-results
       - persist_to_workspace:
