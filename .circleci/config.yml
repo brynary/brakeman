@@ -48,6 +48,7 @@ jobs:
     <<: *default
     working_directory: ~/repo
     steps:
+      - checkout
       - attach_workspace:
           at: ~/repo/tmp
       - qlty/coverage_publish:
